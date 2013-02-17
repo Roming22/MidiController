@@ -1,0 +1,54 @@
+Input KEYWORD1
+read KEYWORD2
+
+autocalibrate KEYWORD2
+
+readPin KEYWORD2
+
+DigitalInput KEYWORD1
+readPin KEYWORD2
+
+AnalogInput KEYWORD1
+readPin KEYWORD2
+
+Output KEYWORD1
+write KEYWORD2
+
+DigitalOutput KEYWORD1
+write KEYWORD2
+
+PowerLed KEYWORD1
+handle KEYWORD2
+
+Control KEYWORD1
+handle KEYWORD2
+
+activate KEYWORD2
+
+deactivate KEYWORD2
+
+hasChanged KEYWORD2
+
+sendMessage KEYWORD2
+
+MomentarySwitch KEYWORD1
+handle KEYWORD2
+
+LatchedSwitch KEYWORD1
+handle KEYWORD2
+
+invert KEYWORD2
+
+hasChanged KEYWORD2
+
+BankSelector KEYWORD1
+handle KEYWORD2
+
+handleBankChange KEYWORD2
+
+handleMidiControls KEYWORD2
+
+handleOutput KEYWORD2
+
+getControl KEYWORD2
+
