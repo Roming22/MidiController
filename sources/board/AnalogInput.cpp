@@ -1,6 +1,6 @@
 #include "AnalogInput.h"
 
-namespace hardware {
+namespace board {
 
 AnalogInput::AnalogInput(const int iPin, const bool iInverted) :
 		Input(iPin, iInverted) {
@@ -14,4 +14,4 @@ int AnalogInput::readPin() const {
 	return analogRead(_pin);
 }
 
-} /* namespace hardware */
+} /* namespace board */

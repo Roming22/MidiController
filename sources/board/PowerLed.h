@@ -3,19 +3,18 @@
 
 #include "Output.h"
 
-namespace hardware {
+namespace board {
 
 class PowerLed {
-	const hardware::Output& _output;
+	board::DigitalOutput _output;
 	int _on;
 	int _off;
 public:
-	PowerLed(const hardware::Output& iOutput, const int iOn = -1,
-			const int iOff = -1);
+	PowerLed(const int iPin, const int iOn = -1, const int iOff = -1);
 	virtual ~PowerLed();
 
 	void handle();
 };
 
-} /* namespace hardware */
+} /* namespace board */
 #endif /* POWERLED_H_ */

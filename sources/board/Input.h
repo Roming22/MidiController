@@ -3,7 +3,7 @@
 
 #include "Teensy.h"
 
-namespace hardware {
+namespace board {
 
 class Input {
 protected:
@@ -13,7 +13,7 @@ protected:
 	int _minValue;
 	int _maxValue;
 public:
-	Input(const int iPin, const bool iInverted=false);
+	Input(const int iPin, const bool iInverted = false);
 	virtual ~Input();
 	virtual float read(); // Should return a value between 0 and 1.
 protected:
@@ -21,5 +21,5 @@ protected:
 	virtual int readPin() const = 0;
 };
 
-} /* namespace hardware */
+} /* namespace board */
 #endif /* INPUT_H_ */

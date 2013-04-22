@@ -1,7 +1,7 @@
 #ifndef OUTPUT_H_
 #define OUTPUT_H_
 #include "Teensy.h"
-namespace hardware {
+namespace board {
 
 class Output {
 protected:
@@ -12,5 +12,5 @@ public:
 	virtual void write(const int iValue) const = 0;
 };
 
-} /* namespace hardware */
+} /* namespace board */
 #endif /* OUTPUT_H_ */

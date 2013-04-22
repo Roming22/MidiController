@@ -3,14 +3,14 @@
 
 #include "Input.h"
 
-namespace hardware {
+namespace board {
 
-class AnalogInput: public hardware::Input {
+class AnalogInput: public board::Input {
 public:
-	AnalogInput(const int iPin, const bool iInverted=false);
+	AnalogInput(const int iPin, const bool iInverted = false);
 	virtual ~AnalogInput();
 	virtual int readPin() const;
 };
 
-} /* namespace hardware */
+} /* namespace board */
 #endif /* ANALOGINPUT_H_ */

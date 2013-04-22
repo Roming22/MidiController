@@ -4,7 +4,7 @@
 
     
 
-namespace hardware {
+namespace board {
 
 AnalogInput::AnalogInput(const int iPin, const bool iInverted) :
 		Input(iPin, iInverted) {
@@ -18,12 +18,12 @@ int AnalogInput::readPin() const {
 	return analogRead(_pin);
 }
 
-} /* namespace hardware */
+} /* namespace board */
 
-namespace hardware {
+namespace board {
 
 DigitalInput::DigitalInput(const int iPin, const bool iInverted) :
-		Input(iPin ,iInverted) {
+		Input(iPin, iInverted) {
 	pinMode(_pin, INPUT_PULLUP);
 	_minValue = LOW;
 	_maxValue = HIGH;
@@ -36,28 +36,30 @@ int DigitalInput::readPin() const {
 	return digitalRead(_pin);
 }
 
-} /* namespace hardware */
+} /* namespace board */
 
-namespace hardware {
+namespace board {
 
-DigitalOutput::DigitalOutput(const int iPin) : Output(iPin) {
-    pinMode(_pin, OUTPUT);
-    digitalWrite(_pin, LOW);
+DigitalOutput::DigitalOutput(const int iPin) :
+		Output(iPin) {
+	pinMode(_pin, OUTPUT);
+	digitalWrite(_pin, LOW);
 }
 
 DigitalOutput::~DigitalOutput() {
 }
 
-void DigitalOutput::write(const int iValue) const{
-    digitalWrite(_pin, (iValue<=LOW?LOW:HIGH));
+void DigitalOutput::write(const int iValue) const {
+	digitalWrite(_pin, (iValue <= LOW ? LOW : HIGH));
 }
 
-} /* namespace hardware */
+} /* namespace board */
 
-namespace hardware {
+namespace board {
 
 Input::Input(const int iPin, const bool iInverted) :
-		_pin(iPin), _inverted(iInverted), _value(0), _minValue(1024), _maxValue(0) {
+		_pin(iPin), _inverted(iInverted), _value(0), _minValue(1024), _maxValue(
+				0) {
 }
 
 Input::~Input() {
@@ -68,8 +70,8 @@ float Input::read() {
 	autocalibrate();
 	float pctValue = _value - _minValue; // Get value relative to the min value
 	pctValue = (pctValue) / (float(_maxValue) - float(_minValue)); //get the value as a percentage
-	if (_inverted){
-		pctValue = 1-pctValue;
+	if (_inverted) {
+		pctValue = 1 - pctValue;
 	}
 	return pctValue;
 }
@@ -90,9 +92,9 @@ void Input::autocalibrate() {
 	}
 }
 
-} /* namespace hardware */
+} /* namespace board */
 
-namespace hardware {
+namespace board {
 
 Output::Output(const int iPin) :
 		_pin(iPin) {
@@ -101,13 +103,12 @@ Output::Output(const int iPin) :
 Output::~Output() {
 }
 
-} /* namespace hardware */
+} /* namespace board */
 
-namespace hardware {
+namespace board {
 
-PowerLed::PowerLed(const hardware::Output& iOutput, const int iOn,
-		const int iOff) :
-		_output(iOutput), _on(iOn), _off(iOff) {
+PowerLed::PowerLed(const int iPin, const int iOn, const int iOff) :
+		_output(iPin), _on(iOn), _off(iOff) {
 	if (iOn < 0) {
 		_on = 10;
 	}
@@ -137,49 +138,137 @@ void PowerLed::handle() {
 	}
 }
 
+} /* namespace board */
+
+namespace hardware {
+
+ContinuousController::ContinuousController(const int iInputPin,
+		const bool iInputInverted, const int iOutputPin) :
+		GenericController(new board::AnalogInput(iInputPin, iInputInverted),
+				new board::DigitalOutput(iOutputPin)), _knownMin(0), _knownMax(
+				0) {
+	_knownMin = getInternalValue();
+	_knownMax = _knownMin;
+}
+
+ContinuousController::~ContinuousController() {
+}
+
+float ContinuousController::getValue() {
+	_value = getInternalValue();
+	if (_knownMin > _value) {
+		_knownMin = _value;
+	}
+	if (_knownMax < _value) {
+		_knownMax = _value;
+	}
+	return (_value - _knownMin) / (_knownMax - _knownMin);
+}
+
+} /* namespace hardware */
+
+namespace hardware {
+
+GenericController::GenericController(board::Input* iInput,
+		board::Output const * iOutput) :
+		_input(iInput), _output(iOutput), _value(0) {
+	_value = getInternalValue();
+}
+
+GenericController::~GenericController() {
+}
+
+void GenericController::setOutput(const int iValue) {
+	if (_output != 0) {
+		_output->write(iValue);
+	}
+}
+
+int GenericController::getInternalValue() {
+	return _input->read();
+}
+
+} /* namespace hardware */
+
+namespace hardware {
+
+LatchedSwitch::LatchedSwitch(const int iInputPin, const bool iInputInverted,
+		const int iOutputPin) :
+		OnOffController(iInputPin, iInputInverted, iOutputPin), _state(0), _value(
+				0) {
+	_state = getInternalValue();
+	//Serial.println(_state);
+}
+
+LatchedSwitch::~LatchedSwitch() {
+}
+
+float LatchedSwitch::getValue() {
+	if (_state == _restValue) {
+		_state = getInternalValue();
+		if (_state != _restValue) {
+			_value = ++_value % 2;
+		}
+	}
+	else{
+		_state = getInternalValue();
+	}
+	//Serial.println(getInternalValue());
+	return _value;
+}
+
+} /* namespace hardware */
+
+namespace hardware {
+
+MomentarySwitch::MomentarySwitch(const int iInputPin, const bool iInputInverted,
+		const int iOutputPin) :
+		OnOffController(iInputPin, iInputInverted, iOutputPin) {
+}
+
+MomentarySwitch::~MomentarySwitch() {
+}
+
+float MomentarySwitch::getValue() {
+	_value = getInternalValue();
+	return (_value == _restValue ? 0 : 1);
+}
+
+} /* namespace hardware */
+
+namespace hardware {
+
+OnOffController::OnOffController(const int iInputPin, const bool iInputInverted,
+		const int iOutputPin) :
+		GenericController(new board::DigitalInput(iInputPin, iInputInverted),
+				new board::DigitalOutput(iOutputPin)), _restValue(0), _state(
+				OFF_HOLD) {
+	_restValue = getInternalValue();
+}
+
+OnOffController::~OnOffController() {
+}
+
+OnOffController::State OnOffController::getState() {
+	return _state;
+}
+
+bool OnOffController::isState(const State iState) const {
+	return _state == iState;
+}
+
 } /* namespace hardware */
 
 namespace midi {
 
-BankSelector::BankSelector(hardware::Input* iInput, hardware::Output* iOutput,
-		midi::Control*** iBanks, int iBankCount, int iBankSize, bool iSharedLed) :
-		LatchedSwitch(0, 0, iInput, iOutput), _bank(iBanks), _bankCount(
-				iBankCount), _bankSize(iBankSize), _outputIsSharedWithPowerLed(
-				iSharedLed), _selectedId(0) {
+Bank::Bank(midi::GenericControl** iBank, int iBankSize) :
+		_bank(iBank), _bankSize(iBankSize) {
 }
 
-BankSelector::~BankSelector() {
+Bank::~Bank() {
 }
 
-void BankSelector::handle() {
-	handleBankChange();
-
-	handleMidiControls();
-
-	if (_output != 0) {
-		handleOutput();
-	}
-}
-
-void BankSelector::handleBankChange() {
-	if (hasChanged()) {
-		for (int id = 0; id < _bankSize; id++) {
-			if (getControl(id) != 0) {
-				getControl(id)->deactivate();
-			}
-		}
-		_selectedId = (_selectedId + 1) % _bankCount;
-		for (int id = 0; id < _bankSize; id++) {
-			if (getControl(id) != 0) {
-				getControl(id)->activate();
-			}
-		}
-		Serial.print("Switching to bank ");
-		Serial.println(_selectedId);
-	}
-}
-
-void BankSelector::handleMidiControls() {
+void Bank::handle() {
 	for (int id = 0; id < _bankSize; id++) {
 		if (getControl(id) != 0) {
 			getControl(id)->handle();
@@ -188,57 +277,110 @@ void BankSelector::handleMidiControls() {
 
 }
 
-void BankSelector::handleOutput() {
-	if (_bankCount == 2) {
-		if (_outputIsSharedWithPowerLed) {
-			if (_selectedId == 1) {
-				_output->write(HIGH);
-			}
-		} else {
-			_output->write(_selectedId ? LOW : HIGH);
+void Bank::activate() {
+	for (int id = 0; id < _bankSize; id++) {
+		if (getControl(id) != 0) {
+			getControl(id)->activate();
 		}
 	}
-	// TODO : support more than 2 banks.
 }
-midi::Control* BankSelector::getControl(int index) {
-	return _bank[_selectedId][index];
+
+void Bank::deactivate() {
+	for (int id = 0; id < _bankSize; id++) {
+		if (getControl(id) != 0) {
+			getControl(id)->deactivate();
+		}
+	}
+}
+
+void Bank::reset() {
+	for (int id = 0; id < _bankSize; id++) {
+		if (getControl(id) != 0) {
+			getControl(id)->reset();
+		}
+	}
+}
+
+midi::GenericControl* Bank::getControl(const int index) {
+	return _bank[index];
 }
 
 } /* namespace midi */
 
 namespace midi {
 
-Control::Control(const int iChannel, const int iNote,
-		hardware::Input* iInput, hardware::Output const * iOutput) :
-		_input(iInput), _output(iOutput), _channel(iChannel), _note(iNote), _midiValue(
-				0), _minMidiValue(0), _maxMidiValue(127) {
+BankSelector::BankSelector(hardware::OnOffController* iController,
+		midi::Bank** iBanks, int iBankCount, bool iSharedLed) :
+		_controller(iController), _bank(iBanks), _bankCount(iBankCount), _outputIsSharedWithPowerLed(
+				iSharedLed), _currentBank(0) {
 }
 
-Control::~Control() {
+BankSelector::~BankSelector() {
 }
 
-bool Control::hasChanged() {
-	if (_input != 0) {
-		float newValue = _input->read();
+void BankSelector::handle() {
+	handleBankChange();
+	getBank()->handle();
+	if (_controller != 0) {
+		handleOutput();
+	}
+}
 
-		// Apply to the control range
-		newValue = (newValue * (_maxMidiValue - _minMidiValue)) + _minMidiValue;
-		if(newValue<_minMidiValue){
-			newValue = _minMidiValue;
-		}
-		else if (newValue>_maxMidiValue){
-			newValue = _maxMidiValue;
-		}
+void BankSelector::reset() {
+	while (_currentBank < _bankCount) {
+		getBank()->reset();
+		++_currentBank;
+	}
+	_currentBank=0;
+}
 
-		if (int(newValue) != _midiValue) {
-			_midiValue = int(newValue);
-			return true;
+void BankSelector::handleBankChange() {
+	int newBank = getValue();
+	if (newBank != _currentBank) {
+		getBank()->deactivate();
+		_currentBank = newBank;
+		getBank()->activate();
+		Serial.print("Switching to bank ");
+		Serial.println(_currentBank);
+	}
+}
+
+void BankSelector::handleOutput() {
+	if (_bankCount == 2) {
+		if (_outputIsSharedWithPowerLed) {
+			if (_currentBank == 1) {
+				_controller->setOutput(HIGH);
+			}
+		} else {
+			_controller->setOutput(_currentBank ? LOW : HIGH);
 		}
 	}
-	return false;
+	// TODO : support more than 2 banks.
 }
 
-void Control::sendMessage() {
+int BankSelector::getValue() {
+	// TODO : support more than 2 banks.
+	return int(_controller->getValue());
+}
+
+midi::Bank* BankSelector::getBank() {
+	return _bank[_currentBank];
+}
+
+} /* namespace midi */
+
+namespace midi {
+
+GenericControl::GenericControl(const int iChannel, const int iNote,
+		const int iMinValue, const int iMaxValue) :
+		_channel(iChannel), _note(iNote), _midiValue(iMinValue), _minMidiValue(
+				iMinValue), _maxMidiValue(iMaxValue) {
+}
+
+GenericControl::~GenericControl() {
+}
+
+void GenericControl::sendMessage() {
 	usbMIDI.sendControlChange(_note, _midiValue, _channel);
 	activate();
 	Serial.print("Send control ");
@@ -249,65 +391,91 @@ void Control::sendMessage() {
 	Serial.println(_channel);
 }
 
-void Control::activate() {
-	if (_output != 0) {
-		_output->write(_midiValue);
-	}
-}
-
-void Control::deactivate() {
-	if (_output != 0) {
-		_output->write(LOW);
-	}
-}
-
-} /* namespace midi */
-
-namespace midi {
-LatchedSwitch::LatchedSwitch(const int iChannel, const int iNote, hardware::Input* iInput,
-		hardware::Output const * iOutput) :
-		Control(iChannel, iNote, iInput, iOutput), _state(0) {
-}
-
-LatchedSwitch::~LatchedSwitch() {
-}
-
-void LatchedSwitch::handle() {
-	if (hasChanged()) {
-		_midiValue = invert(_midiValue);
+void GenericControl::handle() {
+	int oldValue = _midiValue;
+	_midiValue = getValue();
+	if (oldValue != _midiValue) {
 		sendMessage();
 	}
 }
 
-int LatchedSwitch::invert(int iValue){
-	return (iValue==_minMidiValue?_maxMidiValue:_minMidiValue);
-}
-
-bool LatchedSwitch::hasChanged(){
-	int tmpMidi = _midiValue;
-	_midiValue = _state;
-	bool hasChanged = Control::hasChanged();
-	_state = _midiValue;
-	_midiValue = tmpMidi;
-	return ( hasChanged && _state == _maxMidiValue);
+void GenericControl::reset() {
+	sendMessage();
 }
 
 } /* namespace midi */
 
 namespace midi {
 
-MomentarySwitch::MomentarySwitch(const int iChannel, const int iNote,
-		hardware::Input* iInput, hardware::Output const * iOutput) :
-		Control(iChannel, iNote, iInput, iOutput) {
+SimpleControl::SimpleControl(const int iChannel, const int iNote,
+		hardware::GenericController* iController, const int iMinValue,
+		const int iMaxValue) :
+		GenericControl(iChannel, iNote, iMinValue, iMaxValue), _controller(
+				iController) {
 }
 
-MomentarySwitch::~MomentarySwitch() {
+SimpleControl::~SimpleControl() {
 }
 
-void MomentarySwitch::handle() {
-	if (hasChanged()) {
-		sendMessage();
+int SimpleControl::getValue() {
+	return (_maxMidiValue - _minMidiValue) * _controller->getValue()
+			+ _minMidiValue;
+}
+
+void SimpleControl::activate() {
+		_controller->setOutput(_midiValue);
+}
+
+void SimpleControl::deactivate() {
+	_controller->setOutput(LOW);
+}
+
+} /* namespace midi */
+
+namespace midi {
+
+UpDownControl::UpDownControl(const int iChannel, const int iNote,
+		hardware::GenericController* iDownController,
+		hardware::GenericController* iUpController, const int iStep,
+		const int iMinValue, const int iMaxValue) :
+		GenericControl(iChannel, iNote, iMinValue, iMaxValue), _step(iStep), _downController(
+				iDownController), _upController(iUpController), _delta(0) {
+}
+
+UpDownControl::~UpDownControl() {
+}
+
+int UpDownControl::getValue() {
+	deactivate();
+	_delta=0;
+	if (_downController->getValue() != 0) {
+		_midiValue -= _step;
+		_downController->setOutput(HIGH);
+		--_delta;
 	}
+	if (_upController->getValue() != 0) {
+		_midiValue += _step;
+		_upController->setOutput(HIGH);
+		++_delta;
+	}
+
+	if (_midiValue < _minMidiValue) {
+		_midiValue = _minMidiValue;
+	} else if (_midiValue > _maxMidiValue) {
+		_midiValue = _maxMidiValue;
+	}
+	return _midiValue;
+}
+
+void UpDownControl::activate() {
+	Serial.println(_delta);
+	_downController->setOutput(_delta<0?HIGH:LOW);
+	_upController->setOutput(_delta>0?HIGH:LOW);
+}
+
+void UpDownControl::deactivate() {
+	_downController->setOutput(LOW);
+	_upController->setOutput(LOW);
 }
 
 } /* namespace midi */

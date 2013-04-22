@@ -8,7 +8,4 @@
 #ifndef MIDI_H_
 #define MIDI_H_
 
-
-
-
 #endif /* MIDI_H_ */

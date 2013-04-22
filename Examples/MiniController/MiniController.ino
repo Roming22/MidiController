@@ -15,57 +15,43 @@
 #define MIDI_CTRL_COUNT 2	// How many physical switches will send MIDI messages
 #define BANK_COUNT 2		// How many banks are going to be created
 #define MIDI_CHANNEL 1		// MIDI channel on which the CC will be sent
-
-
 /*
- * Create hardware inputs/outputs
+ * Create hardware controllers
  */
+hardware::GenericController* gController[5] = {
+		// This switch will be used to control the banks
+		new hardware::LatchedSwitch(4, true, 5),
 
-// The list of pins to read
-hardware::Input* gInput[SWITCH_COUNT] = {
-		new hardware::DigitalInput(4, true),
-		new hardware::DigitalInput(7, true),
-		new hardware::DigitalInput(9, true)
-};
+		// Switches for Bank0
+		new hardware::LatchedSwitch(7, true, 8),
+		new hardware::MomentarySwitch(9, true, 10),
 
-// The list of pins to write
-hardware::Output* gOutput[SWITCH_COUNT] = {
-		new hardware::DigitalOutput(5),
-		new hardware::DigitalOutput(8),
-		new hardware::DigitalOutput(10)
-};
+		// Switches for Bank1
+		new hardware::MomentarySwitch(7, true, 8),
+		new hardware::MomentarySwitch(9,true, 10) };
 
 // The output for the PowerLed will be shared with the bank selector
-hardware::PowerLed gPowerLed(*gOutput[0], 13, 26);
+board::PowerLed gPowerLed(5, 13, 26);
 
 
 /*
- *  Create MIDI controls
+ * Create the MIDI banks
  */
+midi::GenericControl* gBank0[MIDI_CTRL_COUNT] = {
+		new midi::SimpleControl(MIDI_CHANNEL, 20, gController[1]),
+		new midi::SimpleControl(MIDI_CHANNEL, 21, gController[2]) };
 
-// The list of MIDI commands the device supports.
-midi::Control* gMidiControl[4] = {
-		new midi::LatchedSwitch(MIDI_CHANNEL, 20, gInput[1], gOutput[1]),
-		new midi::MomentarySwitch(MIDI_CHANNEL, 21, gInput[2], gOutput[2]),
-		new midi::MomentarySwitch(MIDI_CHANNEL, 110, gInput[1], gOutput[1]),
-		new midi::LatchedSwitch(MIDI_CHANNEL, 111, gInput[2], gOutput[2])
-};
-
-/*
- * Create the BankSelector
- */
-
-// The first bank has the CC20 and CC21 controls
-midi::Control* gBank0[MIDI_CTRL_COUNT] = { gMidiControl[0], gMidiControl[1] };
-
-// The second bank has the CC110 and CC111 controls
-midi::Control* gBank1[MIDI_CTRL_COUNT] = { gMidiControl[2], gMidiControl[3] };
+midi::GenericControl* gBank1[1] = {
+		new midi::UpDownControl(MIDI_CHANNEL, 110, gController[3], gController[4], 4) };
 
 // Put the 2 banks together
-midi::Control** gBanks[BANK_COUNT] = { gBank0, gBank1 };
+midi::Bank* gBanks[BANK_COUNT] = {
+		new midi::Bank(gBank0, MIDI_CTRL_COUNT),
+		new midi::Bank(gBank1, 1) };
 
 // The bank selection is controlled by the first switch
-midi::BankSelector gBankSelector(gInput[0], gOutput[0], gBanks, BANK_COUNT, MIDI_CTRL_COUNT, true);
+midi::BankSelector gBankSelector((hardware::OnOffController*) gController[0],
+		gBanks, BANK_COUNT, true);
 
 void setup() {
 	Serial.begin(38400);
@@ -73,17 +59,7 @@ void setup() {
 	pinMode(6, OUTPUT);
 	digitalWrite(6, HIGH);
 
-	// Turn on each output
-	for (int index = 0; index < SWITCH_COUNT; index++) {
-		gOutput[index]->write(HIGH);
-		delay(50);
-	}
-
-	// Turn off each output in reverse order
-	for (int index = SWITCH_COUNT - 1; index >= 0; index--) {
-		delay(50);
-		gOutput[index]->write(LOW);
-	}
+	gBankSelector.reset();
 
 	// Turn off PCB LED
 	digitalWrite(6, LOW);

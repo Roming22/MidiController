@@ -1,10 +1,9 @@
 #include "PowerLed.h"
 
-namespace hardware {
+namespace board {
 
-PowerLed::PowerLed(const hardware::Output& iOutput, const int iOn,
-		const int iOff) :
-		_output(iOutput), _on(iOn), _off(iOff) {
+PowerLed::PowerLed(const int iPin, const int iOn, const int iOff) :
+		_output(iPin), _on(iOn), _off(iOff) {
 	if (iOn < 0) {
 		_on = 10;
 	}
@@ -34,4 +33,4 @@ void PowerLed::handle() {
 	}
 }
 
-} /* namespace hardware */
+} /* namespace board */

@@ -1,9 +1,10 @@
 #include "Input.h"
 
-namespace hardware {
+namespace board {
 
 Input::Input(const int iPin, const bool iInverted) :
-		_pin(iPin), _inverted(iInverted), _value(0), _minValue(1024), _maxValue(0) {
+		_pin(iPin), _inverted(iInverted), _value(0), _minValue(1024), _maxValue(
+				0) {
 }
 
 Input::~Input() {
@@ -14,8 +15,8 @@ float Input::read() {
 	autocalibrate();
 	float pctValue = _value - _minValue; // Get value relative to the min value
 	pctValue = (pctValue) / (float(_maxValue) - float(_minValue)); //get the value as a percentage
-	if (_inverted){
-		pctValue = 1-pctValue;
+	if (_inverted) {
+		pctValue = 1 - pctValue;
 	}
 	return pctValue;
 }
@@ -36,4 +37,4 @@ void Input::autocalibrate() {
 	}
 }
 
-} /* namespace hardware */
+} /* namespace board */

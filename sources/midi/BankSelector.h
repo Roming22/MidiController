@@ -1,32 +1,27 @@
 #ifndef BANKSELECTOR_H_
 #define BANKSELECTOR_H_
 
-#include "LatchedSwitch.h"
-
 namespace midi {
 
-class BankSelector: public midi::LatchedSwitch {
+class BankSelector {
+	hardware::OnOffController* _controller;
 	int _bankCount;
-	int _bankSize;
-	int _selectedId;
-	midi::Control*** _bank;
+	int _currentBank;
+	midi::Bank** _bank;
 	bool _outputIsSharedWithPowerLed;
 public:
-	//BankSelector(hardware::Input* iInput, hardware::Output* iOutput,
-	//	int iBankCount, int iBankSize,
-	//	bool iSharedLed);
-	BankSelector(hardware::Input* iInput, hardware::Output* iOutput,
-			midi::Control*** iBanks, int iBankCount, int iBankSize,
-			bool iSharedLed);
+	BankSelector(hardware::OnOffController* iController, midi::Bank** iBanks,
+			int iBankCount, bool iSharedLed);
 	virtual ~BankSelector();
 
 	void handle();
+	void reset();
 
-	void handleBankChange();
-	void handleMidiControls();
+protected:
+	midi::Bank* getBank();
 	void handleOutput();
-
-	midi::Control* getControl(int index);
+	int getValue();
+	void handleBankChange();
 };
 
 } /* namespace midi */

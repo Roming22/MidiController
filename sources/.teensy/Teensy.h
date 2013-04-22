@@ -23,7 +23,7 @@ public:
 };
 UsbMidi usbMIDI;
 
-class SerialOutput{
+class SerialOutput {
 	void begin(int);
 	void print(void*);
 	void print(double);

@@ -1,9 +1,9 @@
 #include "DigitalInput.h"
 
-namespace hardware {
+namespace board {
 
 DigitalInput::DigitalInput(const int iPin, const bool iInverted) :
-		Input(iPin ,iInverted) {
+		Input(iPin, iInverted) {
 	pinMode(_pin, INPUT_PULLUP);
 	_minValue = LOW;
 	_maxValue = HIGH;
@@ -16,4 +16,4 @@ int DigitalInput::readPin() const {
 	return digitalRead(_pin);
 }
 
-} /* namespace hardware */
+} /* namespace board */

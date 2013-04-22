@@ -3,14 +3,14 @@
 
 #include "Output.h"
 
-namespace hardware {
+namespace board {
 
-class DigitalOutput: public hardware::Output {
+class DigitalOutput: public board::Output {
 public:
 	DigitalOutput(const int iPin);
 	virtual ~DigitalOutput();
 	virtual void write(const int iValue) const;
 };
 
-} /* namespace hardware */
+} /* namespace board */
 #endif /* DIGITALOUTPUT_H_ */

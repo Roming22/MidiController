@@ -3,16 +3,24 @@ IFS="
 
 SOURCE_DIR=$PWD
 
-HARDWARE=(Input
+BOARD=(Input
 DigitalInput
 AnalogInput
 Output
 DigitalOutput
 PowerLed)
 
-MIDI=(Control
-MomentarySwitch
+HARDWARE=(
+GenericController
+OnOffController
 LatchedSwitch
+MomentarySwitch
+ContinuousController)
+
+MIDI=(GenericControl
+SimpleControl
+UpDownControl
+Bank
 BankSelector)
 
 TARGET=MidiController
@@ -44,7 +52,17 @@ make_lib(){
 generate_h(){
     KEYWORDS=${TARGET_DIR}/keywords.txt
     TARGET_FILE=${TARGET_DIR}/${TARGET}.h
-
+    
+    for CLASSNAME in "${BOARD[@]}"; do
+        SOURCE_FILE=$SOURCE_DIR/board/${CLASSNAME}.h
+        cat $SOURCE_FILE | grep -v "^#include" >> $TARGET_FILE
+        echo ${CLASSNAME} KEYWORD1 >> ${KEYWORDS}
+        for FUNC in `grep '(' $SOURCE_FILE | grep -v ${CLASSNAME}`; do
+            FUNC=`echo $FUNC | sed -E 's:.*[[:space:]]([[:alnum:]~]+)\(.*:\1:'`
+            echo "$FUNC" KEYWORD2"\n" >> ${KEYWORDS}
+        done
+    done
+    
     for CLASSNAME in "${HARDWARE[@]}"; do
         SOURCE_FILE=$SOURCE_DIR/hardware/${CLASSNAME}.h
         cat $SOURCE_FILE | grep -v "^#include" >> $TARGET_FILE

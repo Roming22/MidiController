@@ -1,6 +1,6 @@
 #include "Output.h"
 
-namespace hardware {
+namespace board {
 
 Output::Output(const int iPin) :
 		_pin(iPin) {
@@ -9,4 +9,4 @@ Output::Output(const int iPin) :
 Output::~Output() {
 }
 
-} /* namespace hardware */
+} /* namespace board */
