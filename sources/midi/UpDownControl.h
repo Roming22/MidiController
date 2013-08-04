@@ -7,17 +7,16 @@
 
 namespace midi {
 
-class UpDownControl: public GenericControl {
+class UpDownControl: public SingleActionControl {
 protected:
 	hardware::GenericController* _upController;
 	hardware::GenericController* _downController;
 	int _step;
 	int _delta;
 public:
-	UpDownControl(const int iChannel, const int iNote,
+	UpDownControl(const MidiTarget& iMidi,
 			hardware::GenericController* iDownController,
-			hardware::GenericController* iUpController, const int iStep = 1,
-			const int iMinValue = 0, const int iMaxValue = 127);
+			hardware::GenericController* iUpController, const int iStep = 1);
 	virtual ~UpDownControl();
 
 	virtual void activate();

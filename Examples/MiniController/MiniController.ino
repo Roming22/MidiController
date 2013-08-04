@@ -18,35 +18,47 @@
 /*
  * Create hardware controllers
  */
-hardware::GenericController* gController[5] = {
+hardware::GenericController* gController[7] = {
 		// This switch will be used to control the banks
 		new hardware::LatchedSwitch(4, true, 5),
 
 		// Switches for Bank0
-		new hardware::LatchedSwitch(7, true, 8),
-		new hardware::MomentarySwitch(9, true, 10),
+		new hardware::LatchedSwitch(7, true, 8), new hardware::MomentarySwitch(
+				9, true, 10),
 
 		// Switches for Bank1
 		new hardware::MomentarySwitch(7, true, 8),
-		new hardware::MomentarySwitch(9,true, 10) };
+		new hardware::MomentarySwitch(9, true, 10),
+
+		// Switches for Bank2
+		new hardware::MomentarySwitch(7, true, 8),
+		new hardware::MomentarySwitch(9, true, 10) };
 
 // The output for the PowerLed will be shared with the bank selector
 board::PowerLed gPowerLed(5, 13, 26);
 
-
 /*
  * Create the MIDI banks
  */
-midi::GenericControl* gBank0[MIDI_CTRL_COUNT] = {
-		new midi::SimpleControl(MIDI_CHANNEL, 20, gController[1]),
-		new midi::SimpleControl(MIDI_CHANNEL, 21, gController[2]) };
+// Example with of a Latched and a Momentary switch
+midi::AbstractControl* gBank0[MIDI_CTRL_COUNT] = { new midi::SimpleControl(
+		midi::MidiTarget(MIDI_CHANNEL, 10), gController[1]),
+		new midi::SimpleControl(midi::MidiTarget(MIDI_CHANNEL, 11),
+				gController[2]) };
 
-midi::GenericControl* gBank1[1] = {
-		new midi::UpDownControl(MIDI_CHANNEL, 110, gController[3], gController[4], 4) };
+// Example of a UpDown control
+midi::AbstractControl* gBank1[MIDI_CTRL_COUNT - 1] = { new midi::UpDownControl(
+		midi::MidiTarget(MIDI_CHANNEL, 20), gController[3], gController[4], 4) };
+
+// Example of the double actions switches
+midi::AbstractControl* gBank2[MIDI_CTRL_COUNT] = { new midi::DoubleClickControl(
+		midi::MidiTarget(MIDI_CHANNEL, 30), midi::MidiTarget(MIDI_CHANNEL, 31),
+		gController[5]), new midi::ClickHoldControl(
+		midi::MidiTarget(MIDI_CHANNEL, 32), midi::MidiTarget(MIDI_CHANNEL, 33),
+		gController[6]), };
 
 // Put the 2 banks together
-midi::Bank* gBanks[BANK_COUNT] = {
-		new midi::Bank(gBank0, MIDI_CTRL_COUNT),
+midi::Bank* gBanks[BANK_COUNT] = { new midi::Bank(gBank0, MIDI_CTRL_COUNT),
 		new midi::Bank(gBank1, 1) };
 
 // The bank selection is controlled by the first switch

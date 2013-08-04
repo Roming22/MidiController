@@ -261,7 +261,7 @@ bool OnOffController::isState(const State iState) const {
 
 namespace midi {
 
-Bank::Bank(midi::GenericControl** iBank, int iBankSize) :
+Bank::Bank(midi::AbstractControl** iBank, int iBankSize) :
 		_bank(iBank), _bankSize(iBankSize) {
 }
 
@@ -301,7 +301,7 @@ void Bank::reset() {
 	}
 }
 
-midi::GenericControl* Bank::getControl(const int index) {
+midi::AbstractControl* Bank::getControl(const int index) {
 	return _bank[index];
 }
 
@@ -368,62 +368,84 @@ midi::Bank* BankSelector::getBank() {
 }
 
 } /* namespace midi */
+/*
+ * DoubleActionControl.cpp
+ *
+ *  Created on: Apr 22, 2013
+ *      Author: rarnaud
+ */
+
+
+namespace hardware {
+
+DoubleActionControl::DoubleActionControl(const midi::MidiTarget iMidi1,
+		const midi::MidiTarget iMidi2, hardware::GenericController* iController,
+		const int iActivationDelay) :
+		_midi1(iMidi1), _midi2(iMidi2), _activationDelay(iActivationDelay), _controller(
+				iController), _currentDelay(0) {
+}
+
+DoubleActionControl::~DoubleActionControl() {
+}
+
+} /* namespace hardware */
+/*
+ * DoubleClickControl.cpp
+ *
+ *  Created on: Apr 22, 2013
+ *      Author: rarnaud
+ */
+
 
 namespace midi {
 
-GenericControl::GenericControl(const int iChannel, const int iNote,
-		const int iMinValue, const int iMaxValue) :
-		_channel(iChannel), _note(iNote), _midiValue(iMinValue), _minMidiValue(
-				iMinValue), _maxMidiValue(iMaxValue) {
+DoubleClickControl::DoubleClickControl(const midi::MidiTarget iMidi1,
+		const midi::MidiTarget iMidi2, hardware::GenericController* iController,
+		const int iActivationDelay) : DoubleActionControl(iMidi1, iMidi2, iController, iActivationDelay) {
 }
 
-GenericControl::~GenericControl() {
+DoubleClickControl::~DoubleClickControl() {
 }
 
-void GenericControl::sendMessage() {
-	usbMIDI.sendControlChange(_note, _midiValue, _channel);
-	activate();
-	Serial.print("Send control ");
-	Serial.print(_note);
-	Serial.print("(");
-	Serial.print(_midiValue);
-	Serial.print(") on channel ");
-	Serial.println(_channel);
+} /* namespace midi */
+/*
+ * MidiTarget.cpp
+ *
+ *  Created on: Apr 22, 2013
+ *      Author: rarnaud
+ */
+
+
+namespace midi {
+
+MidiTarget::MidiTarget(const int iChannel, const int iNote, const int iMinValue,
+		const int iMaxValue) :
+		_channel(iChannel), _note(iNote), _value(iMinValue), _minValue(
+				iMinValue), _maxValue(iMaxValue) {
 }
 
-void GenericControl::handle() {
-	int oldValue = _midiValue;
-	_midiValue = getValue();
-	if (oldValue != _midiValue) {
-		sendMessage();
-	}
-}
-
-void GenericControl::reset() {
-	sendMessage();
+MidiTarget::~MidiTarget() {
 }
 
 } /* namespace midi */
 
 namespace midi {
 
-SimpleControl::SimpleControl(const int iChannel, const int iNote,
-		hardware::GenericController* iController, const int iMinValue,
-		const int iMaxValue) :
-		GenericControl(iChannel, iNote, iMinValue, iMaxValue), _controller(
-				iController) {
+SimpleControl::SimpleControl(const MidiTarget& iMidi,
+		hardware::GenericController* iController) :
+		SingleActionControl(iMidi), _controller(iController) {
 }
 
 SimpleControl::~SimpleControl() {
 }
 
 int SimpleControl::getValue() {
-	return (_maxMidiValue - _minMidiValue) * _controller->getValue()
-			+ _minMidiValue;
+	return (_midi._maxValue - _midi._minValue) * _controller->getValue()
+			+ _midi._minValue;
 }
 
 void SimpleControl::activate() {
-		_controller->setOutput(_midiValue);
+	_controller->setOutput(_midi._value);
 }
 
 void SimpleControl::deactivate() {
@@ -434,11 +456,44 @@ void SimpleControl::deactivate() {
 
 namespace midi {
 
-UpDownControl::UpDownControl(const int iChannel, const int iNote,
+SingleActionControl::SingleActionControl(const MidiTarget& iMidi) : _midi(iMidi) {
+}
+
+SingleActionControl::~SingleActionControl() {
+}
+
+void SingleActionControl::sendMessage() {
+	usbMIDI.sendControlChange(_midi._note, _midi._value, _midi._channel);
+	activate();
+	Serial.print("Send control ");
+	Serial.print(_midi._note);
+	Serial.print("(");
+	Serial.print(_midi._value);
+	Serial.print(") on channel ");
+	Serial.println(_midi._channel);
+}
+
+void SingleActionControl::handle() {
+	int oldValue = _midi._value;
+	_midi._value = getValue();
+	if (oldValue != _midi._value) {
+		sendMessage();
+	}
+}
+
+void SingleActionControl::reset() {
+	sendMessage();
+}
+
+} /* namespace midi */
+
+
+namespace midi {
+
+UpDownControl::UpDownControl(const MidiTarget& iMidi,
 		hardware::GenericController* iDownController,
-		hardware::GenericController* iUpController, const int iStep,
-		const int iMinValue, const int iMaxValue) :
-		GenericControl(iChannel, iNote, iMinValue, iMaxValue), _step(iStep), _downController(
+		hardware::GenericController* iUpController, const int iStep) :
+		SingleActionControl(iMidi), _step(iStep), _downController(
 				iDownController), _upController(iUpController), _delta(0) {
 }
 
@@ -447,30 +502,29 @@ UpDownControl::~UpDownControl() {
 
 int UpDownControl::getValue() {
 	deactivate();
-	_delta=0;
+	_delta = 0;
 	if (_downController->getValue() != 0) {
-		_midiValue -= _step;
+		_midi._value -= _step;
 		_downController->setOutput(HIGH);
 		--_delta;
 	}
 	if (_upController->getValue() != 0) {
-		_midiValue += _step;
+		_midi._value += _step;
 		_upController->setOutput(HIGH);
 		++_delta;
 	}
 
-	if (_midiValue < _minMidiValue) {
-		_midiValue = _minMidiValue;
-	} else if (_midiValue > _maxMidiValue) {
-		_midiValue = _maxMidiValue;
+	if (_midi._value < _midi._minValue) {
+		_midi._value = _midi._minValue;
+	} else if (_midi._value > _midi._maxValue) {
+		_midi._value = _midi._maxValue;
 	}
-	return _midiValue;
+	return _midi._value;
 }
 
 void UpDownControl::activate() {
-	Serial.println(_delta);
-	_downController->setOutput(_delta<0?HIGH:LOW);
-	_upController->setOutput(_delta>0?HIGH:LOW);
+	_downController->setOutput(_delta < 0 ? HIGH : LOW);
+	_upController->setOutput(_delta > 0 ? HIGH : LOW);
 }
 
 void UpDownControl::deactivate() {

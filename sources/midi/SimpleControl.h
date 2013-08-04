@@ -3,13 +3,12 @@
 
 namespace midi {
 
-class SimpleControl: public GenericControl {
+class SimpleControl: public SingleActionControl {
 protected:
 	hardware::GenericController* _controller;
 public:
-	SimpleControl(const int iChannel, const int iNote,
-			hardware::GenericController* iController, const int iMinValue = 0,
-			const int iMaxValue = 127);
+	SimpleControl(const MidiTarget& iMidi,
+			hardware::GenericController* iController);
 	virtual ~SimpleControl();
 
 	virtual void activate();

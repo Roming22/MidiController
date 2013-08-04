@@ -6,10 +6,10 @@ namespace midi {
 class Bank {
 protected:
 	int _bankSize;
-	midi::GenericControl** _bank;
+	midi::AbstractControl** _bank;
 
 public:
-	Bank(midi::GenericControl** iBank, int iBankSize);
+	Bank(midi::AbstractControl** iBank, int iBankSize);
 	virtual ~Bank();
 
 	void handle();
@@ -18,7 +18,7 @@ public:
 	void reset();
 
 protected:
-	midi::GenericControl* getControl(const int index);
+	midi::AbstractControl* getControl(const int index);
 };
 
 } /* namespace midi */

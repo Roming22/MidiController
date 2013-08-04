@@ -17,9 +17,14 @@ LatchedSwitch
 MomentarySwitch
 ContinuousController)
 
-MIDI=(GenericControl
+MIDI=(
+MidiTarget
+AbstractControl
+SingleActionControl
 SimpleControl
 UpDownControl
+DoubleActionControl
+DoubleClickControl
 Bank
 BankSelector)
 

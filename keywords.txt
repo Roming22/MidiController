@@ -41,7 +41,8 @@ getValue KEYWORD2
 ContinuousController KEYWORD1
 getValue KEYWORD2
 
-GenericControl KEYWORD1
+MidiTarget KEYWORD1
+AbstractControl KEYWORD1
 handle KEYWORD2
 
 reset KEYWORD2
@@ -51,6 +52,13 @@ activate KEYWORD2
 deactivate KEYWORD2
 
 getValue KEYWORD2
+
+sendMessage KEYWORD2
+
+SingleActionControl KEYWORD1
+handle KEYWORD2
+
+reset KEYWORD2
 
 sendMessage KEYWORD2
 
@@ -68,6 +76,8 @@ deactivate KEYWORD2
 
 getValue KEYWORD2
 
+DoubleActionControl KEYWORD1
+DoubleClickControl KEYWORD1
 Bank KEYWORD1
 handle KEYWORD2
 

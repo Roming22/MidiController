@@ -225,54 +225,105 @@ public:
 } /* namespace hardware */
 #endif /* CONTINUOUSCONTROLLER_H_ */
 /*
- * The mother of all MIDI controls.
+ * MidiTarget.h
  *
- * A min and max value are available, but it is probably best to configure
- * your software instead of the controller.
+ *  Created on: Apr 22, 2013
+ *      Author: rarnaud
  */
-#ifndef GENERICCONTROL_H_
-#define GENERICCONTROL_H_
+
+#ifndef MIDITARGET_H_
+#define MIDITARGET_H_
 
 namespace midi {
 
-class GenericControl {
-protected:
+class MidiTarget {
+public:
 	int _channel;
 	int _note;
-	int _midiValue;
-	int _minMidiValue;
-	int _maxMidiValue;
+	int _value;
+	int _minValue;
+	int _maxValue;
 
+	MidiTarget(const int iChannel, const int iNote, const int iMinValue=0,
+			const int iMaxValue=127);
+	virtual ~MidiTarget();
+};
+
+} /* namespace midi */
+#endif /* MIDITARGET_H_ */
+/*
+ * AbstractControl.h
+ *
+ *  Created on: Apr 22, 2013
+ *      Author: rarnaud
+ */
+
+#ifndef ABSTRACTCONTROL_H_
+#define ABSTRACTCONTROL_H_
+
+namespace midi {
+
+class AbstractControl {
 public:
-	GenericControl(const int iChannel, const int iNote, const int iMinValue,
-			const int iMaxValue);
-	virtual ~GenericControl();
+	AbstractControl() {
+	}
 
-	void handle();
-	void reset();
+	virtual ~AbstractControl() {
+	}
+
+	virtual void handle() = 0;
+	virtual void reset() = 0;
 
 	virtual void activate() = 0;
 	virtual void deactivate() = 0;
 	virtual int getValue() = 0;
 
 protected:
+	virtual void sendMessage() = 0;
+};
+
+} /* namespace midi */
+#endif /* ABSTRACTCONTROL_H_ */
+/*
+ * The mother of all MIDI controls.
+ *
+ * A min and max value are available, but it is probably best to configure
+ * your software instead of the controller.
+ */
+#ifndef SINGLEACTIONCONTROL_H_
+#define SINGLEACTIONCONTROL_H_
+
+
+namespace midi {
+
+class SingleActionControl : public AbstractControl{
+protected:
+	MidiTarget _midi;
+
+public:
+	SingleActionControl(const MidiTarget& iMidi);
+	virtual ~SingleActionControl();
+
+	void handle();
+	void reset();
+
+protected:
 	void sendMessage();
 };
 
 } /* namespace midi */
-#endif /* GENERICCONTROL_H_ */
+#endif /* SINGLEACTIONCONTROL_H_ */
 #ifndef SIMPLECONTROL_H_
 #define SIMPLECONTROL_H_
 
 namespace midi {
 
-class SimpleControl: public GenericControl {
+class SimpleControl: public SingleActionControl {
 protected:
 	hardware::GenericController* _controller;
 public:
-	SimpleControl(const int iChannel, const int iNote,
-			hardware::GenericController* iController, const int iMinValue = 0,
-			const int iMaxValue = 127);
+	SimpleControl(const MidiTarget& iMidi,
+			hardware::GenericController* iController);
 	virtual ~SimpleControl();
 
 	virtual void activate();
@@ -291,17 +342,16 @@ public:
 
 namespace midi {
 
-class UpDownControl: public GenericControl {
+class UpDownControl: public SingleActionControl {
 protected:
 	hardware::GenericController* _upController;
 	hardware::GenericController* _downController;
 	int _step;
 	int _delta;
 public:
-	UpDownControl(const int iChannel, const int iNote,
+	UpDownControl(const MidiTarget& iMidi,
 			hardware::GenericController* iDownController,
-			hardware::GenericController* iUpController, const int iStep = 1,
-			const int iMinValue = 0, const int iMaxValue = 127);
+			hardware::GenericController* iUpController, const int iStep = 1);
 	virtual ~UpDownControl();
 
 	virtual void activate();
@@ -311,6 +361,60 @@ public:
 
 } /* namespace midi */
 #endif /* UPDOWNCONTROL_H_ */
+/*
+ * DoubleActionControl.h
+ *
+ *  Created on: Apr 22, 2013
+ *      Author: rarnaud
+ */
+
+#ifndef DOUBLEACTIONCONTROL_H_
+#define DOUBLEACTIONCONTROL_H_
+
+
+namespace hardware {
+
+class DoubleActionControl: public midi::AbstractControl {
+protected:
+	hardware::GenericController* _controller;
+	midi::MidiTarget _midi1;
+	midi::MidiTarget _midi2;
+	int _currentDelay;
+	int _activationDelay;
+
+public:
+	DoubleActionControl(const midi::MidiTarget iMidi1,
+			const midi::MidiTarget iMidi2,
+			hardware::GenericController* iController,
+			const int iActivationDelay=10);
+	virtual ~DoubleActionControl();
+};
+
+} /* namespace hardware */
+#endif /* DOUBLEACTIONCONTROL_H_ */
+/*
+ * DoubleClickControl.h
+ *
+ *  Created on: Apr 22, 2013
+ *      Author: rarnaud
+ */
+
+#ifndef DOUBLECLICKCONTROL_H_
+#define DOUBLECLICKCONTROL_H_
+
+
+namespace midi {
+
+class DoubleClickControl: public hardware::DoubleActionControl {
+public:
+	DoubleClickControl(const midi::MidiTarget iMidi1,
+			const midi::MidiTarget iMidi2, hardware::GenericController* iController,
+			const int iActivationDelay);
+	virtual ~DoubleClickControl();
+};
+
+} /* namespace midi */
+#endif /* DOUBLECLICKCONTROL_H_ */
 #ifndef BANK_H_
 #define BANK_H_
 
@@ -319,10 +423,10 @@ namespace midi {
 class Bank {
 protected:
 	int _bankSize;
-	midi::GenericControl** _bank;
+	midi::AbstractControl** _bank;
 
 public:
-	Bank(midi::GenericControl** iBank, int iBankSize);
+	Bank(midi::AbstractControl** iBank, int iBankSize);
 	virtual ~Bank();
 
 	void handle();
@@ -331,7 +435,7 @@ public:
 	void reset();
 
 protected:
-	midi::GenericControl* getControl(const int index);
+	midi::AbstractControl* getControl(const int index);
 };
 
 } /* namespace midi */

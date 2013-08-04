@@ -2,7 +2,7 @@
 
 namespace midi {
 
-Bank::Bank(midi::GenericControl** iBank, int iBankSize) :
+Bank::Bank(midi::AbstractControl** iBank, int iBankSize) :
 		_bank(iBank), _bankSize(iBankSize) {
 }
 
@@ -42,7 +42,7 @@ void Bank::reset() {
 	}
 }
 
-midi::GenericControl* Bank::getControl(const int index) {
+midi::AbstractControl* Bank::getControl(const int index) {
 	return _bank[index];
 }
 
